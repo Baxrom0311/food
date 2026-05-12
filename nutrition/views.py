@@ -175,81 +175,84 @@ class AIInsightsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        user = request.user
-        profile = getattr(user, 'profile', None)
-        
-        if not profile:
-            return Response({'error': 'Profil topilmadi'}, status=404)
-        
-        # Oxirgi 7 kunlik ma'lumotlar
-        from datetime import timedelta
-        week_ago = timezone.now().date() - timedelta(days=7)
-        meals = Meal.objects.filter(user=user, date__gte=week_ago)
-        weight_logs = WeightLog.objects.filter(user=user, date__gte=week_ago).order_by('-date')
-        
-        # Statistika
-        total_days = 7
-        days_logged = meals.values('date').distinct().count()
-        
-        avg_calories = 0
-        avg_protein = 0
-        avg_carbs = 0
-        avg_fat = 0
-        
-        if meals.exists():
-            for meal in meals:
-                avg_calories += float(meal.total_calories or 0)
-                avg_protein += float(meal.total_protein or 0)
-                avg_carbs += float(meal.total_carbs or 0)
-                avg_fat += float(meal.total_fat or 0)
+        try:
+            user = request.user
+            profile = getattr(user, 'profile', None)
             
-            avg_calories /= total_days
-            avg_protein /= total_days
-            avg_carbs /= total_days
-            avg_fat /= total_days
-        
-        # Vazn o'zgarishi
-        weight_change = 0
-        if weight_logs.count() >= 2:
-            latest_weight = float(weight_logs.first().weight_kg)
-            oldest_weight = float(weight_logs.last().weight_kg)
-            weight_change = latest_weight - oldest_weight
-        
-        # Context
-        context = {
-            "profile": {
-                "gender": profile.get_gender_display() if profile.gender else "Noaniq",
-                "height": profile.height_cm or 0,
-                "current_weight": profile.weight_kg or 0,
-                "goal": profile.get_goal_display() if profile.goal else "Noaniq",
-                "activity_level": profile.get_activity_level_display() if profile.activity_level else "Noaniq",
-                "bmr": profile.bmr or 0,
-                "tdee": profile.tdee or 0,
-            },
-            "targets": {
-                "calories": profile.daily_calorie_goal or 2000,
-                "protein": float(profile.protein_goal_g or 120),
-                "carbs": float(profile.carbs_goal_g or 250),
-                "fat": float(profile.fat_goal_g or 65),
-            },
-            "last_7_days": {
-                "days_logged": days_logged,
-                "total_days": total_days,
-                "avg_calories": round(avg_calories, 1),
-                "avg_protein": round(avg_protein, 1),
-                "avg_carbs": round(avg_carbs, 1),
-                "avg_fat": round(avg_fat, 1),
-                "weight_change_kg": round(weight_change, 2),
+            if not profile:
+                return Response({'error': 'Profil topilmadi'}, status=404)
+            
+            # Oxirgi 7 kunlik ma'lumotlar
+            from datetime import timedelta
+            week_ago = timezone.now().date() - timedelta(days=7)
+            meals = Meal.objects.filter(user=user, date__gte=week_ago)
+            weight_logs = WeightLog.objects.filter(user=user, date__gte=week_ago).order_by('-date')
+            
+            # Statistika
+            total_days = 7
+            days_logged = meals.values('date').distinct().count()
+            
+            avg_calories = 0
+            avg_protein = 0
+            avg_carbs = 0
+            avg_fat = 0
+            
+            if meals.exists():
+                for meal in meals:
+                    avg_calories += float(meal.total_calories or 0)
+                    avg_protein += float(meal.total_protein or 0)
+                    avg_carbs += float(meal.total_carbs or 0)
+                    avg_fat += float(meal.total_fat or 0)
+                
+                avg_calories /= total_days
+                avg_protein /= total_days
+                avg_carbs /= total_days
+                avg_fat /= total_days
+            
+            # Vazn o'zgarishi
+            weight_change = 0
+            if weight_logs.count() >= 2:
+                latest_weight = float(weight_logs.first().weight_kg)
+                oldest_weight = float(weight_logs.last().weight_kg)
+                weight_change = latest_weight - oldest_weight
+            
+            # Context
+            context = {
+                "profile": {
+                    "gender": profile.get_gender_display() if profile.gender else "Noaniq",
+                    "height": profile.height_cm or 0,
+                    "current_weight": profile.weight_kg or 0,
+                    "goal": profile.get_goal_display() if profile.goal else "Noaniq",
+                    "activity_level": profile.get_activity_level_display() if profile.activity_level else "Noaniq",
+                    "bmr": profile.bmr or 0,
+                    "tdee": profile.tdee or 0,
+                },
+                "targets": {
+                    "calories": profile.daily_calorie_goal or 2000,
+                    "protein": float(profile.protein_goal_g or 120),
+                    "carbs": float(profile.carbs_goal_g or 250),
+                    "fat": float(profile.fat_goal_g or 65),
+                },
+                "last_7_days": {
+                    "days_logged": days_logged,
+                    "total_days": total_days,
+                    "avg_calories": round(avg_calories, 1),
+                    "avg_protein": round(avg_protein, 1),
+                    "avg_carbs": round(avg_carbs, 1),
+                    "avg_fat": round(avg_fat, 1),
+                    "weight_change_kg": round(weight_change, 2),
+                }
             }
-        }
-        
-        # AI dan xulosalar olish
-        insights = self._get_ai_insights(context)
-        
-        return Response({
-            "context": context,
-            "insights": insights
-        })
+            
+            # AI dan xulosalar olish
+            insights = self._get_ai_insights(context)
+            
+            return Response({
+                "context": context,
+                "insights": insights
+            })
+        except Exception as e:
+            return Response({'error': f'Xatolik: {str(e)}'}, status=500)
     
     def _get_ai_insights(self, context):
         """DeepSeek AI dan xulosalar olish"""
