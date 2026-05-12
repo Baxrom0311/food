@@ -69,7 +69,7 @@ INSTALLED_APPS = [
     'food',
     'meals',
     'analytics',
-    'nutrition',
+    # 'nutrition',  # Temporarily disabled
 ]
 
 MIDDLEWARE = [
