@@ -95,6 +95,8 @@ def _analyze_with_gemini(image_file, prompt: str, api_key: str, model: str) -> s
             'generationConfig': {
                 'temperature': 0.2,
                 'maxOutputTokens': 1024,
+                'responseMimeType': 'application/json',
+                'thinkingConfig': {'thinkingBudget': 0},
             }
         },
         timeout=45,
@@ -103,8 +105,8 @@ def _analyze_with_gemini(image_file, prompt: str, api_key: str, model: str) -> s
     data = response.json()
     parts = data['candidates'][0]['content']['parts']
     # Gemini 2.5+ da birinchi part 'thought' bo'lishi mumkin, oxirgi text partni olamiz
-    text_parts = [p['text'] for p in parts if 'text' in p]
-    return text_parts[-1] if text_parts else parts[0].get('text', '')
+    text_parts = [p['text'] for p in parts if 'text' in p and not p.get('thought')]
+    return text_parts[-1] if text_parts else parts[-1].get('text', '')
 
 
 def _analyze_with_openai(image_file, prompt: str, api_key: str, model: str, api_url: str) -> str:
