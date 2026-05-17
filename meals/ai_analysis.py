@@ -101,7 +101,10 @@ def _analyze_with_gemini(image_file, prompt: str, api_key: str, model: str) -> s
     )
     response.raise_for_status()
     data = response.json()
-    return data['candidates'][0]['content']['parts'][0]['text']
+    parts = data['candidates'][0]['content']['parts']
+    # Gemini 2.5+ da birinchi part 'thought' bo'lishi mumkin, oxirgi text partni olamiz
+    text_parts = [p['text'] for p in parts if 'text' in p]
+    return text_parts[-1] if text_parts else parts[0].get('text', '')
 
 
 def _analyze_with_openai(image_file, prompt: str, api_key: str, model: str, api_url: str) -> str:
