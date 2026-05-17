@@ -230,7 +230,7 @@ FOOD_VISION_API_KEY = config('FOOD_VISION_API_KEY', default=config('GEMINI_API_K
 
 # Gemini models: gemini-2.0-flash-exp, gemini-2.5-pro-exp, gemini-1.5-flash, gemini-1.5-pro
 # OpenAI models: gpt-4o, gpt-4o-mini, gpt-4-turbo
-FOOD_VISION_MODEL = config('FOOD_VISION_MODEL', default='gemini-2.0-flash-exp')
+FOOD_VISION_MODEL = config('FOOD_VISION_MODEL', default='gemini-2.0-flash')
 
 # OpenAI-compatible API URL (faqat provider='openai' bo'lsa ishlatiladi)
 FOOD_VISION_API_URL = config('FOOD_VISION_API_URL', default='https://api.openai.com/v1/chat/completions')
